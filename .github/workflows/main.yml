@@ -15,11 +15,11 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt update && sudo apt install ffmpeg -y
 
-      - name: Start Infinite Looping Stream
+      - name: Start Smooth Looping Stream
         run: |
           ffmpeg -re -f concat -safe 0 -stream_loop -1 \
           -fflags +genpts -i playlist.txt \
           -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p" \
-          -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
-          -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
+          -c:v libx264 -preset ultrafast -b:v 2000k -maxrate 2000k -bufsize 4000k \
+          -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 -threads 0 \
           -f flv "rtmp://a.rtmp.youtube.com/live2/${{ secrets.STREAM_KEY }}"
