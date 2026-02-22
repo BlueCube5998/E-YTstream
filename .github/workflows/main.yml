@@ -1,8 +1,9 @@
 name: The Repeating Stream
+
 on:
   schedule:
-    - cron: '0 */5 * * *' # Restarts every 5 hours
-  workflow_dispatch:      # Allows you to start it manually
+    - cron: '0 */5 * * *'  # Automatically restarts every 5 hours to stay live forever
+  workflow_dispatch:       # Allows you to start it manually from the Actions tab
 
 jobs:
   stream:
@@ -12,8 +13,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install FFmpeg
-        run: sudo apt install ffmpeg -y
+        run: sudo apt update && sudo apt install ffmpeg -y
 
-      - name: Start Streaming
+      - name: Start Looping Stream
         run: |
-          ffmpeg -re -stream_loop -1 -i video (3).webm -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 128k -f flv "rtmp://a.rtmp.youtube.com/live2/${{ secrets.STREAM_KEY }}"
+          ffmpeg -re -stream_loop -1 -i "video (3).webm" \
+          -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3000k -bufsize 6000k \
+          -pix_fmt yuv420p -g 50 -c:a aac -b:a 128k \
+          -f flv "rtmp://a.rtmp.youtube.com/live2/${{ secrets.STREAM_KEY }}"
