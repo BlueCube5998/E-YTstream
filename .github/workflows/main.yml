@@ -2,8 +2,8 @@ name: The Repeating Stream
 
 on:
   schedule:
-    - cron: '0 */5 * * *'  # Automatically restarts every 5 hours to stay live forever
-  workflow_dispatch:       # Allows you to start it manually from the Actions tab
+    - cron: '0 */5 * * *'  # Restarts every 5 hours
+  workflow_dispatch:       # Manual start
 
 jobs:
   stream:
@@ -15,9 +15,17 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt update && sudo apt install ffmpeg -y
 
-      - name: Start Looping Stream
+      - name: Shuffle Playlist
         run: |
-          ffmpeg -re -stream_loop -1 -i "video (3).webm" \
+          shuf playlist.txt > shuffled_playlist.txt
+          echo "Current Order:"
+          cat shuffled_playlist.txt
+
+      - name: Start Stream with Auto-Normalization
+        run: |
+          # The complex part below ensures that webm/mp4 mix doesn't crash the stream
+          ffmpeg -re -f concat -safe 0 -stream_loop -1 -i shuffled_playlist.txt \
+          -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1" \
           -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3000k -bufsize 6000k \
           -pix_fmt yuv420p -g 50 -c:a aac -b:a 128k \
           -f flv "rtmp://a.rtmp.youtube.com/live2/${{ secrets.STREAM_KEY }}"
