@@ -1,0 +1,19 @@
+name: The Repeating Stream
+on:
+  schedule:
+    - cron: '0 */5 * * *' # Restarts every 5 hours
+  workflow_dispatch:      # Allows you to start it manually
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install FFmpeg
+        run: sudo apt install ffmpeg -y
+
+      - name: Start Streaming
+        run: |
+          ffmpeg -re -stream_loop -1 -i video.mp4 -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 128k -f flv "rtmp://a.rtmp.youtube.com/live2/${{ secrets.STREAM_KEY }}"
