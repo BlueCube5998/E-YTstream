@@ -2,8 +2,8 @@ name: The Repeating Stream
 
 on:
   schedule:
-    - cron: '0 */5 * * *'  # Restarts every 5 hours to stay live forever
-  workflow_dispatch:       # Allows you to click "Run" manually
+    - cron: '0 */5 * * *'  # Auto-restarts every 5 hours
+  workflow_dispatch:       # Manual start button
 
 jobs:
   stream:
@@ -15,16 +15,13 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt update && sudo apt install ffmpeg -y
 
-      - name: Shuffle Playlist
+      - name: Start Looping Stream
         run: |
-          shuf playlist.txt > shuffled_playlist.txt
-          echo "Order for this 5-hour session:"
-          cat shuffled_playlist.txt
-
-      - name: Start Stream with Normalization
-        run: |
-          ffmpeg -re -f concat -safe 0 -stream_loop -1 -fflags +genpts -i shuffled_playlist.txt \
-          -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p" \
-          -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3000k -bufsize 6000k \
-          -g 60 -c:a aac -b:a 128k -ar 44100 \
+          # The -fflags +genpts and +igndts fix the VP9/Opus header errors you saw
+          # The -re ensures it streams in real-time speed
+          ffmpeg -re -f concat -safe 0 -stream_loop -1 \
+          -fflags +genpts+igndts -i playlist.txt \
+          -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p" \
+          -c:v libx264 -preset veryfast -maxrate 2500k -bufsize 5000k \
+          -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
           -f flv "rtmp://a.rtmp.youtube.com/live2/${{ secrets.STREAM_KEY }}"
